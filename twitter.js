@@ -1,12 +1,8 @@
-const express = require('express'),
-    redis = require('redis'),
+const redis = require('redis'),
     CryptoJS = require("crypto-js"),
     client = redis.createClient(6379, "192.168.99.100"),
-    app = express(),
-    CronJob = require('cron').CronJob,
-    Twitter = require('twitter-node-client').Twitter,
-    fs = require('fs');
-let hashtag = process.env.WINBOX_TWITTER_HOST;
+    Twitter = require('twitter-node-client').Twitter;
+let hashtag = process.env.WINBOX_TWITTER_HASHTAG;
 const tweetsCount = 20,
     REDIS_SET_NAME = 'dashboard',
     SOURCE = 'twitter';
@@ -31,12 +27,50 @@ client.on('connect', function () {
     getFeed();
 });
 
-var getFeed = function () {
-
+var getFeed = async function () {
     let twitter = new Twitter(twitterApiConfig);
-    twitter.getSearch({'q': hashtag, 'count': tweetsCount}, error => {
+    let tweetsJson;
+    await twitter.getSearch({'q': hashtag, 'count': tweetsCount}, error => {
         console.log(error)
-    }, tweets => {
+    }, (tweets) =>  {
+        tweetsJson = JSON.parse(tweets);
+        loopTweets(tweetsJson);
+    });
+};
+
+let loopTweets = async function  (tweetsJson) {
+    console.log();
+    for (let entry of tweetsJson.statuses) {
+        let id = entry.id;
+        let date = new Date(entry.created_at);
+        let timestamp = date.getTime();
+        let text = entry.text;
+        let author = entry.user.screen_name;
+        let ret = {
+            text: text,
+            timestamp: timestamp,
+            author: author,
+            source: SOURCE
+        };
+        await putOnRedis(id, ret);
+    }
+    client.quit();
+}
+
+let putOnRedis = async function (key, value) {
+    await new Promise((resolve, reject) => {
+        client.hsetnx(REDIS_SET_NAME, key, value, redis.print);
+        resolve();
+    });
+};
+
+
+/*
+* var getFeed = async function () {
+    let twitter = new Twitter(twitterApiConfig);
+    await twitter.getSearch({'q': hashtag, 'count': tweetsCount}, error => {
+        console.log(error)
+    }, async function (tweets) {
         let tweetsJson = JSON.parse(tweets);
         for (let entry of tweetsJson.statuses) {
             let id = entry.id;
@@ -50,16 +84,24 @@ var getFeed = function () {
                 author: author,
                 source: SOURCE
             };
-            client.hsetnx(REDIS_SET_NAME, id, JSON.stringify(ret), redis.print);
+            await putOnRedis(id, ret);
         }
     });
     client.quit();
 };
-
+let putOnRedis = async function (key, value) {
+    await new Promise((resolve, reject) => {
+        client.hsetnx(REDIS_SET_NAME, key, value, redis.print)
+        resolve();
+    });
+};
+*
+* */
+/*
 let startCron = function () {
     new CronJob('10 * * * * *', function () {
         console.log('You will see this message every second');
         getFeed()
     }, null, true, 'America/Los_Angeles');
 };
-
+*/
