@@ -24,10 +24,10 @@ client.on("error", function (err) {
 
 client.on('connect', function () {
     console.log('redis connected');
-    getFeed();
+    getTweets();
 });
 
-var getFeed = async function () {
+var getTweets = async function () {
     let twitter = new Twitter(twitterApiConfig);
     let tweetsJson;
     await twitter.getSearch({'q': hashtag, 'count': tweetsCount}, error => {
@@ -66,7 +66,7 @@ let putOnRedis = async function (key, value) {
 
 
 /*
-* var getFeed = async function () {
+* var getTweets = async function () {
     let twitter = new Twitter(twitterApiConfig);
     await twitter.getSearch({'q': hashtag, 'count': tweetsCount}, error => {
         console.log(error)
@@ -101,7 +101,7 @@ let putOnRedis = async function (key, value) {
 let startCron = function () {
     new CronJob('10 * * * * *', function () {
         console.log('You will see this message every second');
-        getFeed()
+        getTweets()
     }, null, true, 'America/Los_Angeles');
 };
 */
