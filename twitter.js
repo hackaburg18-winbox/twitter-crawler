@@ -52,7 +52,7 @@ let loopTweets = async function  (tweetsJson) {
             author: author,
             source: SOURCE
         };
-        await putOnRedis(id, ret);
+        await putOnRedis(id, JSON.stringify(ret));
     }
     client.quit();
 }
