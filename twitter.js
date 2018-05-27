@@ -1,6 +1,6 @@
 const redis = require('redis'),
     CryptoJS = require("crypto-js"),
-    client = redis.createClient(6379, "192.168.99.100"),
+    client = redis.createClient(6379, process.env.WINBOX_REDIS_HOSTNAME),// redis-servcie
     Twitter = require('twitter-node-client').Twitter;
 let hashtag = process.env.WINBOX_TWITTER_HASHTAG;
 const tweetsCount = 20,
